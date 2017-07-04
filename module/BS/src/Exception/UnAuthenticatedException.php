@@ -6,6 +6,6 @@ class UnAuthenticatedException extends AbstractException
 {
     function getTranslation()
     {
-        $this->translate('Please login first.');
+        return $this->translate('Please login first.');
     }
 }

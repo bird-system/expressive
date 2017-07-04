@@ -16,20 +16,20 @@ $_ENV['DB_PASSWORD'] = Utility::getEnvValue('DB_PASSWORD', 'aeiEJA93Kadki93f');
 $_ENV['DB_PORT'] = Utility::getEnvValue('DB_PORT', '3308');
 
 return [
-    'service_manager' => [
-        'db' => [
-            'driver' => 'Pdo_Mysql',
-            'hostname' => gethostbyname($_ENV['DB_HOST']),
-            'database' => $_ENV['DB_DATABASE'],
-            'username' => $_ENV['DB_USERNAME'],
-            'password' => $_ENV['DB_PASSWORD'],
-            'port' => $_ENV['DB_PORT'],
-            'driver_options' => [
-                \PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES \'UTF8\'',
-                \PDO::ATTR_PERSISTENT => 'cli' == php_sapi_name() ? true : false,
-                \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true
-            ],
+    'db' => [
+        'driver' => 'Pdo_Mysql',
+        'hostname' => gethostbyname($_ENV['DB_HOST']),
+        'database' => $_ENV['DB_DATABASE'],
+        'username' => $_ENV['DB_USERNAME'],
+        'password' => $_ENV['DB_PASSWORD'],
+        'port' => $_ENV['DB_PORT'],
+        'driver_options' => [
+            \PDO::MYSQL_ATTR_INIT_COMMAND => 'SET NAMES \'UTF8\'',
+            \PDO::ATTR_PERSISTENT => 'cli' == php_sapi_name() ? true : false,
+            \PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true
         ],
+    ],
+    'service_manager' => [
         'delegators' => [
             Application::class => [
                 PipelineAndRoutesDelegator::class,

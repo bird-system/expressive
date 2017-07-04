@@ -285,10 +285,10 @@ abstract class AbstractController implements ServiceLocatorAwareInterface
         if (is_null($this->params)) {
             $params = $this->request->getQueryParams() ?? [];
             $contentType = $this->request->getHeaderLine('Content-Type');
-            if (strstr('application/json', $contentType)) {
+            if (!empty($contentType) && strstr('application/json', strtolower($contentType))) {
                 $params = array_merge(
                     $params,
-                    Json::decode($this->request->getParsedBody(), Json::TYPE_ARRAY)
+                    Json::decode($this->request->getBody()->getContents(), Json::TYPE_ARRAY)
                 );
             } else {
                 $params = array_merge(

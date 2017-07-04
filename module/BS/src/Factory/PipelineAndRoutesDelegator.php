@@ -38,8 +38,13 @@ class PipelineAndRoutesDelegator
         $app->pipe(NotFoundHandler::class);
 
         // Setup routes:
-        $app->route(BASE_URI . '/:module/:controller[/:action][/:id]', ControllerMiddleware::class);
-        //$app->get('/api/ping', Action\PingAction::class, 'api.ping');
+        $app->route(BASE_URI . '/:module/:controller[/:action][/:id]', ControllerMiddleware::class)->setOptions([
+            'constraints' => [
+                'controller' => '[a-zA-Z][a-zA-Z0-9_-]+',
+                'action' => '[a-zA-Z][a-zA-Z0-9_-]+',
+                'id' => '[\\w_.-]*'
+            ],
+        ]);
 
         return $app;
     }
