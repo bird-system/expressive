@@ -4,10 +4,12 @@ namespace BS\Tests\Controller;
 
 use BS\Middleware\ControllerMiddleware;
 use BS\Tests\AbstractTestCase;
+use BS\Tests\MockedAuthService;
 use Psr\Http\Message\ResponseInterface;
 use BS\Tests\Db\TableGateway\AbstractTableGatewayTest;
 use Zend\Diactoros\ServerRequest;
 use Zend\Expressive\Delegate\NotFoundDelegate;
+use Zend\ServiceManager\ServiceManager;
 
 abstract class AbstractControllerTestCase extends AbstractTestCase
 {
@@ -20,6 +22,17 @@ abstract class AbstractControllerTestCase extends AbstractTestCase
      * @var ResponseInterface
      */
     protected $response;
+
+    function setUp()
+    {
+        parent::setUp();
+
+        if (!$this->serviceLocator->has('AuthService')) {
+            if ($this->serviceLocator instanceof ServiceManager) {
+                $this->serviceLocator->setService('AuthService', new MockedAuthService());
+            }
+        }
+    }
 
     public function dispatch($url, $method = 'GET', array $params = [])
     {

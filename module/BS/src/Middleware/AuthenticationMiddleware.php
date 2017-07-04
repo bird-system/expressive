@@ -2,12 +2,12 @@
 
 namespace BS\Middleware;
 
+use BS\Authentication\AuthenticationService;
 use BS\ServiceLocatorAwareInterface;
 use BS\Traits\ServiceLocatorAwareTrait;
 use Interop\Http\ServerMiddleware\DelegateInterface;
 use Interop\Http\ServerMiddleware\MiddlewareInterface;
 use Psr\Http\Message\ServerRequestInterface;
-use Zend\Authentication\AuthenticationService;
 use Zend\ServiceManager\ServiceManager;
 
 class AuthenticationMiddleware implements MiddlewareInterface, ServiceLocatorAwareInterface
@@ -35,7 +35,6 @@ class AuthenticationMiddleware implements MiddlewareInterface, ServiceLocatorAwa
 
     private function getAuthenticate($module)
     {
-        //TODO:get authentication service with module
         return new AuthenticationService();
     }
 }
