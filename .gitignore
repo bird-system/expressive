@@ -1,0 +1,5 @@
+vendor
+.idea
+php_errors.log
+nginx_error.log
+.DS_Store
