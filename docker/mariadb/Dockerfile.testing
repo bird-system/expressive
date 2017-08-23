@@ -1,0 +1,7 @@
+FROM mariadb
+MAINTAINER Allan Sun <allan.sun@bricre.com>
+
+ADD my.testing.cnf /etc/mysql/conf.d/mariadb.cnf
+ADD init.sh /init.sh
+RUN chmod +x /init.sh
+CMD ["/init.sh"]

@@ -2,6 +2,7 @@
 
 namespace BS\Factory;
 
+use BS\Middleware\ResponseMiddleware;
 use Psr\Container\ContainerInterface;
 use BS\Middleware\AuthenticationMiddleware;
 use BS\Middleware\ControllerMiddleware;
@@ -35,10 +36,16 @@ class PipelineAndRoutesDelegator
         $app->pipe(UrlHelperMiddleware::class);
         $app->pipe(AuthenticationMiddleware::class);
         $app->pipeDispatchMiddleware();
+        $app->pipe(ResponseMiddleware::class);
         $app->pipe(NotFoundHandler::class);
 
         // Setup routes:
-        $app->route(BASE_URI . '/:module/:controller[/:action][/:id]', ControllerMiddleware::class)->setOptions([
+        $app->route(
+            BASE_URI . '/:module/:controller[/:action][/:id]',
+            ControllerMiddleware::class,
+            null,
+            'common'
+        )->setOptions([
             'constraints' => [
                 'controller' => '[a-zA-Z][a-zA-Z0-9_-]+',
                 'action' => '[a-zA-Z][a-zA-Z0-9_-]+',

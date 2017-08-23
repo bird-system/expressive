@@ -3,6 +3,7 @@
 namespace BS\Utility;
 
 use BS\Db\Model\AbstractModel;
+use Psr\Http\Message\ServerRequestInterface;
 use Zend\Db\Adapter\Driver\ResultInterface;
 use Zend\Db\ResultSet\ResultSet;
 use Zend\Db\Sql\Expression;
@@ -256,5 +257,21 @@ class Utility
         ];
 
         return in_array($iso, $europe);
+    }
+
+    public static function checkAcceptJson(ServerRequestInterface $request)
+    {
+        $contentType = strtolower($request->getHeaderLine('Content-Type'));
+        $acceptType = strtolower($request->getHeaderLine('Accept'));
+
+        if ($contentType == 'application/json') {
+            return true;
+        }
+
+        if (preg_match('/[application|*]\/[json|*]/', $acceptType)) {
+            return true;
+        } else {
+            return false;
+        }
     }
 }

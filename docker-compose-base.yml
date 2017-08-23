@@ -7,19 +7,19 @@ services:
       - ./docker/mariadb:/init
       - ./db/init:/docker-entrypoint-initdb.d
     environment:
-      - MYSQL_ROOT_PASSWORD=aeiEJA93Kadki93f
-      - MYSQL_USER=send_for_you
-      - MYSQL_PASSWORD=BatTrapComfortableFootball
-      - MYSQL_DATABASE=send_for_you
+      - MYSQL_ROOT_PASSWORD=rootpassword
+      - MYSQL_USER=user
+      - MYSQL_PASSWORD=password
+      - MYSQL_DATABASE=database
     ports:
-      - '3308:3306'
+      - '3306:3306'
 
   app-development:
     build:
       context: ./docker/app
       dockerfile: Dockerfile.development
     ports:
-      - "8300:80"
+      - "80:80"
 
   app-testing:
     build:

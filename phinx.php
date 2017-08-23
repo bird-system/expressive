@@ -4,16 +4,9 @@
  * Date: 14/12/2015
  * Time: 14:55
  */
-use Zend\ConfigAggregator\ConfigAggregator;
-use Zend\ConfigAggregator\PhpFileProvider;
 
-require_once './bootstrap.php';
-
-$aggregator = new ConfigAggregator([
-    new PhpFileProvider(APP_ROOT . '/config/autoload/{,*.}{global,local}.php')
-]);
-
-$configs = $aggregator->getMergedConfig();
+require './bootstrap.php';
+$configs = require APP_ROOT . '/config/config.php';
 $db = isset($configs['db']) ? $configs['db'] : [];
 
 if (empty($db)) {
@@ -28,8 +21,8 @@ return [
     ],
     "environments" => [
         "default_migration_table" => "phinxlog",
-        "default_database" => "send_for_you",
-        "send_for_you" => [
+        "default_database" => "database",
+        "default" => [
             "adapter" => "mysql",
             "host" => $db['hostname'],
             "name" => $db['database'],

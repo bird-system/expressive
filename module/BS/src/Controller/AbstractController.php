@@ -8,17 +8,20 @@ use BS\Db\TableGateway\AbstractTableGateway;
 use BS\Exception;
 use BS\ServiceLocatorAwareInterface;
 use BS\Traits\ServiceLocatorAwareTrait;
+use BS\I18n\Translator\TranslatorAwareTrait;
 use BS\Utility\Measure;
 use Psr\Http\Message\ServerRequestInterface;
 use Zend\Db\Sql\Expression;
 use Zend\Db\Sql\Select;
+use Zend\Diactoros\Response\HtmlResponse;
 use Zend\Diactoros\Response\JsonResponse;
+use Zend\Expressive\Template\TemplateRendererInterface;
 use Zend\Json\Decoder;
 use Zend\Json\Json;
 
 abstract class AbstractController implements ServiceLocatorAwareInterface
 {
-    use ServiceLocatorAwareTrait;
+    use ServiceLocatorAwareTrait, TranslatorAwareTrait;
 
     const DEFAULT_RECORD_LIMIT = 50;
     const MAXIMUM_RECORD_LIMIT = 500;
@@ -27,8 +30,9 @@ abstract class AbstractController implements ServiceLocatorAwareInterface
     protected $selectLimit;
     protected $selectOffset;
 
+    public $isHtml = false;
+
     protected $measureConvert = false;
-    public $requireLogin = true;
 
     /**
      * @var string Model ClassName for this Controller
@@ -81,6 +85,7 @@ abstract class AbstractController implements ServiceLocatorAwareInterface
 
     /**
      * @param ServerRequestInterface $request
+     *
      * @return $this
      */
     public function setRequest(ServerRequestInterface $request)
@@ -88,6 +93,16 @@ abstract class AbstractController implements ServiceLocatorAwareInterface
         $this->request = $request;
 
         return $this;
+    }
+
+    public function getModuleName()
+    {
+        return $this->request->getAttribute('module');
+    }
+
+    public function getControllerName()
+    {
+        return $this->request->getAttribute('controller');
     }
 
     public function readPre(array $params)
@@ -211,7 +226,6 @@ abstract class AbstractController implements ServiceLocatorAwareInterface
         $params = $this->getParams();
         $id = $this->getParam('id');
 
-        $this->deletePre($params);
         $tableGateway = $this->getTableGateway();
         $tableGateway->delete($this->getTableGateway()->decodeCompositeKey($id));
         $this->deletePost($params);
@@ -266,8 +280,9 @@ abstract class AbstractController implements ServiceLocatorAwareInterface
     }
 
     /**
-     * @param $name
+     * @param      $name
      * @param null $defaultValue
+     *
      * @return mixed|null
      */
     protected function getParam($name, $defaultValue = null)
@@ -288,7 +303,8 @@ abstract class AbstractController implements ServiceLocatorAwareInterface
             if (!empty($contentType) && strstr('application/json', strtolower($contentType))) {
                 $params = array_merge(
                     $params,
-                    Json::decode($this->request->getBody()->getContents(), Json::TYPE_ARRAY)
+                    ($this->request->getBody()->getContents() ?
+                        Json::decode($this->request->getBody()->getContents(), Json::TYPE_ARRAY) : [])
                 );
             } else {
                 $params = array_merge(
@@ -297,12 +313,23 @@ abstract class AbstractController implements ServiceLocatorAwareInterface
                 );
             }
 
-            $params['id'] = $this->request->getAttribute('id');
+            if (!isset($params['id']) || empty($params['id'])) {
+                $params['id'] = $this->request->getAttribute('id');
+            }
+
+            $this->params = $params;
 
             return $params;
         } else {
             return $this->params;
         }
+    }
+
+    public function setParams($params)
+    {
+        $Request = $this->getRequest()->withQueryParams($params);
+        $this->setRequest($Request);
+        $this->params = $params;
     }
 
     public function prepareSelect(Select $select = null)
@@ -579,7 +606,7 @@ abstract class AbstractController implements ServiceLocatorAwareInterface
         $primaryKeys = $this->getTableGateway()->getPrimaryKeys();
         $allKeys = array_merge($primaryKeys, $this->getTableGateway()->getSearchFields());
         foreach ($allKeys as $key) {
-            if (array_key_exists($key, $params)) {
+            if (array_key_exists($key, $params) && $params[$key]) {
                 $arrField = explode('-', $key);
                 if (count($arrField) < 2) {
                     array_unshift($arrField, $this->getTableGateway()->getTable());
@@ -599,7 +626,8 @@ abstract class AbstractController implements ServiceLocatorAwareInterface
      */
     protected function prepareSelectSetSortInfo(Select $select)
     {
-        $sortInfos = $this->getParam('sort') ? Decoder::decode($this->getParam('sort'), Json::TYPE_ARRAY) : null;
+        $sortInfos =
+            $this->getParam('sort') ? Decoder::decode($this->getParam('sort'), Json::TYPE_ARRAY) : null;
         $customizedSortFields = $this->getTableGateway()->getCustomizedSortFields();
         if ($sortInfos) {
             foreach ($sortInfos as $sort) {
@@ -659,5 +687,59 @@ abstract class AbstractController implements ServiceLocatorAwareInterface
         ];
 
         return new JsonResponse($returnData);
+    }
+
+    protected function respondList(Array $data, $message = '')
+    {
+        $listData = [
+            'total' => count($data),
+            'start' => is_null($this->selectOffset) ? 0 : $this->selectOffset,
+            'limit' => is_null($this->selectLimit) ? 0 : $this->selectLimit,
+            'list' => $data
+        ];
+
+        return $this->respond(true, $listData, $message);
+    }
+
+    /**
+     * @return \Zend\Db\Adapter\Driver\AbstractConnection
+     */
+    protected function getDbConnection()
+    {
+        /** @var \Zend\Db\Adapter\Driver\AbstractConnection $connection */
+        $connection = $this->getDbAdapter()->getDriver()->getConnection();
+
+        return $connection;
+    }
+
+    /**
+     * @return \Zend\Db\Adapter\Adapter
+     */
+    protected function getDbAdapter()
+    {
+        return $this->serviceLocator->get('db');
+    }
+
+    /**
+     * @param      $template
+     * @param      $data
+     *
+     * @return mixed
+     */
+    protected function getViewRenderResult($template, $data)
+    {
+        /**
+         * @var $renderer TemplateRendererInterface
+         */
+        $renderer = $this->serviceLocator->get(TemplateRendererInterface::class);
+        return new HtmlResponse($renderer->render($template, $data));
+    }
+
+    protected function getOriginUrl()
+    {
+        $accessControlAllowOrigin = getenv('AccessControlAllowOrigin');
+
+        return $accessControlAllowOrigin !== false ? $accessControlAllowOrigin :
+            $this->getRequest()->getUri()->getScheme() . '://' . $_SERVER['HTTP_HOST'];
     }
 }

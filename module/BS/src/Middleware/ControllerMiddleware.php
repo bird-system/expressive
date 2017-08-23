@@ -2,21 +2,15 @@
 
 namespace BS\Middleware;
 
+use BS\Controller\Exception\AppException;
 use BS\Exception\AbstractWithParamException;
-use BS\Exception\UnAuthenticatedException;
 use Interop\Container\ContainerInterface;
 use Interop\Http\ServerMiddleware\DelegateInterface;
 use Interop\Http\ServerMiddleware\MiddlewareInterface;
-use Psr\Http\Message\ResponseInterface;
 use Psr\Http\Message\ServerRequestInterface;
 use BS\Controller\AbstractController;
 use BS\Factory\CaseTransformerFactory;
 use Zend\Diactoros\Response\EmptyResponse;
-use Zend\Diactoros\Response\JsonResponse;
-use Zend\I18n\Translator\TranslatorInterface;
-use Zend\Session\Config\SessionConfig;
-use Zend\Session\Container;
-use Zend\Session\SessionManager;
 
 class ControllerMiddleware implements MiddlewareInterface
 {
@@ -65,6 +59,8 @@ class ControllerMiddleware implements MiddlewareInterface
                     case 'put':
                         $actionName = 'post';
                         break;
+                    case 'options':
+                        return (new EmptyResponse())->withStatus(200);
                     // All others...
                     default:
                         return (new EmptyResponse())->withStatus(405);
@@ -75,21 +71,11 @@ class ControllerMiddleware implements MiddlewareInterface
             $methodName = $actionName . 'Action';
 
             if (method_exists($Controller, $methodName)) {
+                $response = null;
                 try {
-                    if ($Controller->requireLogin) {
-                        $AuthService = $this->serviceLocator->get('AuthService');
-                        if (!$AuthService->hasIdentity()) {
-                            throw new UnAuthenticatedException();
-                        }
-                    }
-
                     $Controller->setRequest($request);
-                    $this->initSession();
-                    $this->initLocale();
-
                     $response = $Controller->$methodName();
                 } catch (\Throwable $exception) {
-                    // Rollback DB Transactions
                     $Connection = $this->getDbConnection();
                     if ($Connection->isConnected() && $Connection->inTransaction()) {
                         $Connection->rollback();
@@ -99,19 +85,22 @@ class ControllerMiddleware implements MiddlewareInterface
 
                     switch (true) {
                         case $exception instanceof AbstractWithParamException:
-                            $message = vsprintf($translator->translate($exception->getMessage()), $exception->getMessageParams());
+                            $message = vsprintf(
+                                $translator->translate($exception->getMessage()),
+                                $exception->getMessageParams()
+                            );
                             break;
                         default:
                             $message = $translator->translate($exception->getMessage());
                             break;
                     }
-
-                    $response = new JsonResponse(['success' => false, 'code' => 500, 'message' => $message]);
+                    $response = new AppException($message, 500, $exception);
                 }
 
-                if ($response instanceof ResponseInterface) {
-                    return $response;
+                if ($Controller->isHtml) {
+                    $request = $request->withAttribute('display_json', false);
                 }
+                $request = $request->withAttribute('dispatch_result', $response);
             }
         }
 
@@ -129,46 +118,6 @@ class ControllerMiddleware implements MiddlewareInterface
         return $connection;
     }
 
-    protected function initSession()
-    {
-        $config = $this->serviceLocator->get('config');
-
-        if (getenv('SESSION_SERVER')) {
-            ini_set('session.save_handler', 'redis');
-            if (getenv('SESSION_SERVER_DATABASE')) {
-                $dataBase = getenv('SESSION_SERVER_DATABASE');
-            } else {
-                $dataBase = '0';
-            }
-            ini_set('session.save_path', 'tcp://' . gethostbyname(getenv('SESSION_SERVER')) . ':6379?database=' . $dataBase);
-        }
-        $sessionConfig = new SessionConfig();
-        $sessionConfig->setOptions($config['session']);
-        $sessionManager = new SessionManager($sessionConfig);
-
-        $sessionManager->start();
-
-        /**
-         * Optional: If you later want to use namespaces, you can already store the
-         * Manager in the shared (static) Container (=namespace) field
-         */
-        Container::setDefaultManager($sessionManager);
-    }
-
-    protected function initLocale()
-    {
-        $Locale = new Container(self::SESSION_LOCALE);
-        if ($Locale->{self::SESSION_LOCALE}) {
-            $transaltor = $this->serviceLocator->get(TranslatorInterface::class);
-            $transaltor->setLocale($Locale->{self::SESSION_LOCALE});
-            \Locale::setDefault($Locale->{self::SESSION_LOCALE});
-        } else {
-            $Locale->{self::SESSION_LOCALE} = 'en_GB';
-        }
-
-        return $Locale;
-    }
-
     /**
      * @param $moduleName
      * @param $controllerName
@@ -177,7 +126,8 @@ class ControllerMiddleware implements MiddlewareInterface
      */
     protected function getControllerInstance($moduleName, $controllerName)
     {
-        $fullControllerName = ucfirst(strtolower($moduleName)) . '\\Controller\\' . ucfirst($controllerName) . 'Controller';
+        $fullControllerName =
+            ucfirst(strtolower($moduleName)) . '\\Controller\\' . ucfirst($controllerName) . 'Controller';
 
         if (class_exists($fullControllerName)) {
             return $this->serviceLocator->get($fullControllerName);

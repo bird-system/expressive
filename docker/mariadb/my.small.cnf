@@ -1,0 +1,38 @@
+[mysqld]
+max_allowed_packet	= 4M
+thread_cache_size       = 16
+sort_buffer_size	= 4M
+bulk_insert_buffer_size	= 4M
+tmp_table_size		= 4M
+max_heap_table_size	= 8M
+#
+# * MyISAM
+#
+# This replaces the startup script and checks MyISAM tables if needed
+# the first time they are touched. On error, make copy and try a repair.
+key_buffer_size		= 4M
+table_open_cache	= 50
+myisam_sort_buffer_size	= 8M
+concurrent_insert	= 2
+read_buffer_size	= 2M
+read_rnd_buffer_size	= 1M
+#
+# * Query Cache Configuration
+#
+# Cache only tiny result sets, so we can fit more in the query cache.
+query_cache_limit		= 128K
+query_cache_size		= 4M
+
+#
+# * InnoDB
+#
+# InnoDB is enabled by default with a 10MB datafile in /var/lib/mysql/.
+# Read the manual for more InnoDB related options. There are many!
+innodb_buffer_pool_size	= 16M
+innodb_log_buffer_size	= 8M
+innodb_file_per_table	= 1
+innodb_open_files	= 100
+innodb_io_capacity	= 100
+
+
+

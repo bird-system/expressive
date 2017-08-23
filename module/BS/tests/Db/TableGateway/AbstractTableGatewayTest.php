@@ -4,8 +4,6 @@ namespace BS\Tests\Db\TableGateway;
 
 use BS\Db\Model\AbstractModel;
 use BS\Db\TableGateway\AbstractTableGateway;
-use BS\Exception\AbstractWithParamException;
-use BS\ServiceLocatorAwareInterface;
 use BS\Tests\AbstractTestCase;
 use Zend\Db\ResultSet\ResultSet;
 use Zend\Db\Sql\Expression;

@@ -4,13 +4,19 @@ namespace BS\Tests\Controller;
 
 use BS\Middleware\ControllerMiddleware;
 use BS\Tests\AbstractTestCase;
-use BS\Tests\MockedAuthService;
-use Psr\Http\Message\ResponseInterface;
 use BS\Tests\Db\TableGateway\AbstractTableGatewayTest;
+use Interop\Container\ContainerInterface;
+use Psr\Http\Message\ResponseInterface;
 use Zend\Diactoros\ServerRequest;
 use Zend\Expressive\Delegate\NotFoundDelegate;
 use Zend\ServiceManager\ServiceManager;
 
+/**
+ * Class AbstractControllerTestCase
+ *
+ * @package BS\Tests\Controller
+ * @property ServiceManager $serviceLocator
+ */
 abstract class AbstractControllerTestCase extends AbstractTestCase
 {
     /**
@@ -23,14 +29,29 @@ abstract class AbstractControllerTestCase extends AbstractTestCase
      */
     protected $response;
 
-    function setUp()
+    /**
+     * @var $moduleContext
+     */
+    protected $moduleContext;
+
+    public function setUp(ContainerInterface $serviceLocator = null)
     {
-        parent::setUp();
+        parent::setUp($serviceLocator);
+
+        //init the moduleContext
+        $className = get_called_class();
+        $module    = substr($className, 0, strpos($className, '\\'));
 
         if (!$this->serviceLocator->has('AuthService')) {
-            if ($this->serviceLocator instanceof ServiceManager) {
-                $this->serviceLocator->setService('AuthService', new MockedAuthService());
+            $mockedAuthServiceClassName = $module . '\Tests\MockedAuthService';
+            if (class_exists($mockedAuthServiceClassName)) {
+                $this->serviceLocator->setService('AuthService', new $mockedAuthServiceClassName());
             }
+        }
+
+        $moduleContext = strtolower($module);
+        if (in_array($moduleContext, ['admin', 'client', 'manage', 'warehouse'])) {
+            $this->moduleContext = $moduleContext;
         }
     }
 
@@ -38,6 +59,7 @@ abstract class AbstractControllerTestCase extends AbstractTestCase
     {
         $request = new ServerRequest();
         $request = $request->withMethod($method);
+        /** @var ServerRequest $request */
         if (strtoupper($method) == 'GET') {
             $request = $request->withQueryParams($params);
         } else {
@@ -58,12 +80,23 @@ abstract class AbstractControllerTestCase extends AbstractTestCase
         }
 
         $controllerMiddleware = $this->serviceLocator->get(ControllerMiddleware::class);
-        $this->response = $controllerMiddleware->process($request, $this->serviceLocator->get(NotFoundDelegate::class));
+        $this->response       =
+            $controllerMiddleware->process($request, $this->serviceLocator->get(NotFoundDelegate::class));
     }
 
     public function assertResponseStatusCode($code)
     {
-        self::assertEquals($this->response->getStatusCode(), $code);
+        self::assertEquals($code, $this->response->getStatusCode());
+    }
+
+    public function assertControllerException($exception)
+    {
+        self::assertEquals($exception, $this->getResponse()->getHeader('exception')[0]);
+    }
+
+    public function assertExceptionParams($params)
+    {
+        self::assertEquals($params, $this->getResponse()->getHeader('exception_params'));
     }
 
     /**
@@ -96,7 +129,7 @@ abstract class AbstractControllerTestCase extends AbstractTestCase
             $tableGatewayTest = $this->serviceLocator->get($class);
         } else {
             $tableGatewayTest = new $this->tableGatewayTestClass;
-            $tableGatewayTest->setUp();
+            $tableGatewayTest->setUp($this->getServiceLocator());
         }
 
         return $tableGatewayTest;

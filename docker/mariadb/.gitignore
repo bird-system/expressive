@@ -1,0 +1,11 @@
+# Created by .ignore support plugin (hsz.mobi)
+.DS_Store
+.buildpath
+.project
+.settings
+**/cache/**
+vendor
+*.local.php
+*.bak
+cache.properties
+.idea

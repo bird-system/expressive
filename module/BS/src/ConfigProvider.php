@@ -62,6 +62,12 @@ class ConfigProvider
                     TableGatewayAbstractFactory::class,
                     MonologServiceAbstractFactory::class
                 ]
+            ],
+            'templates' => [
+                'paths' => [
+                    __NAMESPACE__ => __DIR__ . '/../view',
+                    'error' => __DIR__ . '/../view/error'
+                ]
             ]
         ];
     }

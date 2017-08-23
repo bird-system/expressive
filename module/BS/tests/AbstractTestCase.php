@@ -2,14 +2,16 @@
 
 namespace BS\Tests;
 
+use Bramus\Monolog\Formatter\ColoredLineFormatter;
 use BS\I18n\Translator\TranslatorAwareInterface;
 use BS\I18n\Translator\TranslatorAwareTrait;
 use BS\Logger\Formatter\WildfireFormatter;
-use Faker\Factory as FackerFactory;
+use Faker\Factory as FakerFactory;
 use Faker\Generator;
 use BS\ServiceLocatorAwareInterface;
 use BS\Traits\LoggerAwareTrait;
 use BS\Traits\ServiceLocatorAwareTrait;
+use Interop\Container\ContainerInterface;
 use Monolog\Handler\StreamHandler;
 use PHPUnit\Framework\TestCase;
 use BS\Db\Adapter\Profiler\AutoLogProfiler;
@@ -25,10 +27,12 @@ abstract class AbstractTestCase extends TestCase implements TranslatorAwareInter
      */
     private static $faker;
 
-    function setUp()
+    public function setUp(ContainerInterface $serviceLocator = null)
     {
-        $container = require APP_ROOT . '/config/container.php';
-        $this->setServiceLocator($container);
+        if (is_null($serviceLocator)) {
+            $serviceLocator = require APP_ROOT . '/config/container.php';
+        }
+        $this->setServiceLocator($serviceLocator);
         $this->initLogger();
         $this->initDbProfiler();
 
@@ -39,7 +43,7 @@ abstract class AbstractTestCase extends TestCase implements TranslatorAwareInter
         parent::setUp();
     }
 
-    function tearDown()
+    public function tearDown()
     {
         parent::tearDown();
 
@@ -92,7 +96,7 @@ abstract class AbstractTestCase extends TestCase implements TranslatorAwareInter
         foreach ($handlers as &$handler) {
             if ($handler instanceof StreamHandler) {
                 //Make sure we reference the class directly so no error will be poped during production environment
-                $Formatter = new \Bramus\Monolog\Formatter\ColoredLineFormatter(null, '%message% %context% %extra%');
+                $Formatter = new ColoredLineFormatter(null, '%message% %context% %extra%');
                 $Formatter->allowInlineLineBreaks(true);
                 $Formatter->ignoreEmptyContextAndExtra(true);
                 $handler->setFormatter($Formatter);
@@ -108,7 +112,7 @@ abstract class AbstractTestCase extends TestCase implements TranslatorAwareInter
     public function getFaker()
     {
         if (!self::$faker) {
-            self::$faker = FackerFactory::create('en_GB');
+            self::$faker = FakerFactory::create('en_GB');
         }
 
         return self::$faker;

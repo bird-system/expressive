@@ -1,0 +1,69 @@
+<h1><?php echo 'An error occurred' ?></h1>
+<h2><?= $this->reason ?></h2>
+
+<?php if (isset($this->error) && $this->error): ?>
+    <?php if (isset($this->error) && $this->error instanceof Exception): ?>
+        <hr/>
+        <h2><?php echo 'Additional information' ?>:</h2>
+        <h3><?php echo get_class($this->error); ?></h3>
+        <dl>
+            <dt><?php echo 'File' ?>:</dt>
+            <dd>
+                <pre class="prettyprint linenums"><?php echo $this->error->getFile() ?>
+                    :<?php echo $this->error->getLine() ?></pre>
+            </dd>
+            <dt><?php echo 'Message' ?>:</dt>
+            <dd>
+                <pre class="prettyprint linenums"><?php echo $this->escapeHtml($this->error->getMessage()) ?></pre>
+            </dd>
+            <dt><?php echo 'Stack trace' ?>:</dt>
+            <dd>
+                <pre class="prettyprint linenums"><?php echo $this->escapeHtml($this->error->getTraceAsString()) ?></pre>
+            </dd>
+        </dl>
+        <?php
+        $e = $this->error->getPrevious();
+        $icount = 0;
+        if ($e) :
+            ?>
+            <hr/>
+            <h2><?php echo 'Previous exceptions' ?>:</h2>
+            <ul class="unstyled">
+                <?php while ($e) : ?>
+                    <li>
+                        <h3><?php echo get_class($e); ?></h3>
+                        <dl>
+                            <dt><?php echo 'File' ?>:</dt>
+                            <dd>
+                                <pre class="prettyprint linenums"><?php echo $e->getFile() ?>
+                                    :<?php echo $e->getLine() ?></pre>
+                            </dd>
+                            <dt><?php echo 'Message' ?>:</dt>
+                            <dd>
+                                <pre class="prettyprint linenums"><?php echo $this->escapeHtml($e->getMessage()) ?></pre>
+                            </dd>
+                            <dt><?php echo 'Stack trace' ?>:</dt>
+                            <dd>
+                                <pre class="prettyprint linenums"><?php echo $this->escapeHtml($e->getTraceAsString()) ?></pre>
+                            </dd>
+                        </dl>
+                    </li>
+                    <?php
+                    $e = $e->getPrevious();
+                    $icount += 1;
+                    if ($icount >= 50) {
+                        echo "<li>There may be more exceptions, but we have no enough memory to proccess it.</li>";
+                        break;
+                    }
+                endwhile;
+                ?>
+            </ul>
+        <?php endif; ?>
+
+    <?php else: ?>
+
+        <h3><?php echo 'No Exception available' ?></h3>
+
+    <?php endif ?>
+
+<?php endif ?>

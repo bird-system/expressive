@@ -10,10 +10,10 @@ use Zend\Db\Adapter\AdapterServiceFactory;
 use BS\Factory\PipelineAndRoutesDelegator;
 
 $_ENV['DB_HOST'] = Utility::getEnvValue('DB_HOST', 'db');
-$_ENV['DB_DATABASE'] = Utility::getEnvValue('DB_DATABASE', 'send_for_you');
-$_ENV['DB_USERNAME'] = Utility::getEnvValue('DB_USERNAME', 'root');
-$_ENV['DB_PASSWORD'] = Utility::getEnvValue('DB_PASSWORD', 'aeiEJA93Kadki93f');
-$_ENV['DB_PORT'] = Utility::getEnvValue('DB_PORT', '3308');
+$_ENV['DB_DATABASE'] = Utility::getEnvValue('DB_DATABASE', 'database');
+$_ENV['DB_USERNAME'] = Utility::getEnvValue('DB_USERNAME', 'user');
+$_ENV['DB_PASSWORD'] = Utility::getEnvValue('DB_PASSWORD', 'password');
+$_ENV['DB_PORT'] = Utility::getEnvValue('DB_PORT', '3306');
 
 return [
     'db' => [

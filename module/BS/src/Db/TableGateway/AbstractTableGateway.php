@@ -7,6 +7,8 @@ use BS\Db\Model\AbstractModel;
 use BS\Db\TableGateway\Exception\IncompleteCompositeKeyException;
 use BS\Db\TableGateway\Exception\SeekException;
 use BS\Exception;
+use BS\Exception\MissRequiredParamException;
+use BS\Exception\CommonWithParamException;
 use BS\I18n\Translator\TranslatorAwareInterface;
 use BS\I18n\Translator\TranslatorAwareTrait;
 use BS\ServiceLocatorAwareInterface;
@@ -19,10 +21,10 @@ use Psr\Log\LoggerAwareInterface;
 use Zend\Db\Adapter\Adapter;
 use Zend\Db\ResultSet\ResultSet;
 use Zend\Db\Sql\Expression;
+use Zend\Db\Sql\Predicate\Predicate;
 use Zend\Db\Sql\Select;
 use Zend\Db\Sql\Sql;
 use Zend\Db\TableGateway\TableGateway;
-use Zend\I18n\Translator\Translator;
 
 /**
  * Class AbstractTableGateway
@@ -95,6 +97,8 @@ abstract class AbstractTableGateway extends TableGateway implements
      * @var Adapter
      */
     protected static $dbAdapter;
+
+    protected $userInfo;
 
     /**
      * @var null|\Zend\Db\ResultSet\ResultSet|AbstractModel[]
@@ -788,5 +792,75 @@ abstract class AbstractTableGateway extends TableGateway implements
     public function getCustomizedFilterFields()
     {
         return $this->customizedFilterFields;
+    }
+
+    /**
+     * @param        $status
+     * @param        $ids
+     * @param        $allStatus
+     * @param string $statusField
+     * @param string $idField
+     *
+     * @return int
+     * @throws AppException
+     * @throws Exception\CommonWithParamException
+     * @throws MissRequiredParamException
+     */
+    public function batchUpdateStatus($status, $ids, $allStatus, $statusField = 'status', $idField = 'id')
+    {
+        $ids = array_unique(array_filter(explode('_', $ids)));
+        if (empty($ids)) {
+            throw new MissRequiredParamException(['ids']);
+        }
+        if (!in_array($status, $allStatus)) {
+            throw new CommonWithParamException('Wrong status [%s] given.', [$status]);
+        }
+
+        return $this->update([$statusField => $status], [$idField => $ids]);
+    }
+
+    public function removeWhere(Select $Select, $key)
+    {
+        $predicates = $Select->where->getPredicates();
+        $Select->reset(Select::WHERE);
+        foreach ($predicates as $predicate) {
+            $Expression = $predicate[1];
+            if ($Expression instanceof Expression) {
+                /**
+                 * @var Expression $Expression
+                 */
+                if (strpos(trim($Expression->getExpression()), $key) === 0) {
+                    $this->log($Expression->getExpression());
+                    continue;
+                }
+            } else {
+                /**
+                 * @var Predicate $Expression
+                 */
+                $ExpressionData = current($Expression->getExpressionData());
+
+                if (strpos(trim($ExpressionData[1][0]), $key) === 0) {
+                    $this->log(vsprintf($ExpressionData[0][0], $ExpressionData[1]));
+                    continue;
+                }
+            }
+
+            $Select->where->addPredicate($predicate[1], $predicate[0]);
+        }
+    }
+
+    public function removeColumns(Select $Select, $keys = [])
+    {
+        $columns = $Select->getRawState(Select::COLUMNS);
+
+        if (!is_array($keys)) {
+            $keys = [$keys];
+        }
+        foreach ($keys as $key) {
+            if (($skey = array_search($key, $columns)) !== false) {
+                unset($columns[$skey]);
+            }
+        }
+        $Select->reset(Select::COLUMNS)->columns($columns);
     }
 }
