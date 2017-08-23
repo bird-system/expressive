@@ -51,7 +51,8 @@ class ConfigProvider
             'service_manager' => [
                 'factories' => [
                     Measure::class => InvokableFactory::class,
-                    TranslatorInterface::class => TranslatorServiceFactory::class
+                    TranslatorInterface::class => TranslatorServiceFactory::class,
+                    Utility\ImageResize::class => InvokableFactory::class,
                 ],
                 'aliases' => [
                     'Measure' => Measure::class,

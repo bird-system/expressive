@@ -52,7 +52,9 @@ return [
             Middleware\NotFoundHandler::class => Container\NotFoundHandlerFactory::class,
 
             \BS\Middleware\AuthenticationMiddleware::class => \BS\Factory\InvokableFactory::class,
-            \BS\Middleware\ControllerMiddleware::class => \BS\Factory\ControllerMiddlewareFactory::class
+            \BS\Middleware\ControllerMiddleware::class => \BS\Factory\ControllerMiddlewareFactory::class,
+
+            \Zend\Expressive\Template\TemplateRendererInterface::class => \Zend\Expressive\ZendView\ZendViewRendererFactory::class
         ],
         'aliases' => [
             'Zend\Expressive\Delegate\DefaultDelegate' => Delegate\NotFoundDelegate::class
