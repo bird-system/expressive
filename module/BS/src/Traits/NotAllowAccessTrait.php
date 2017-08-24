@@ -6,17 +6,17 @@ use BS\Controller\Exception\MethodNotAllowedException;
 
 trait NotAllowAccessTrait
 {
-    public function indexAction($id = false)
+    public function indexAction()
     {
         throw new MethodNotAllowedException();
     }
 
-    public function postAction($data)
+    public function postAction()
     {
         throw new MethodNotAllowedException();
     }
 
-    public function deleteAction($id = false)
+    public function deleteAction()
     {
         throw new MethodNotAllowedException();
     }

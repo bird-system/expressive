@@ -6,12 +6,12 @@ use BS\Controller\Exception\MethodNotAllowedException;
 
 trait JustAllowGetTrait
 {
-    public function postAction($data)
+    public function postAction()
     {
         throw new MethodNotAllowedException();
     }
 
-    public function deleteAction($id = false)
+    public function deleteAction()
     {
         throw new MethodNotAllowedException();
     }
