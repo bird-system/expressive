@@ -117,4 +117,11 @@ abstract class AbstractTestCase extends TestCase implements TranslatorAwareInter
 
         return self::$faker;
     }
+
+    protected function getResponseDelegate()
+    {
+        $ResponseDelegate = new ResponseDelegate();
+        $ResponseDelegate->setServiceLocator($this->serviceLocator);
+        return $ResponseDelegate;
+    }
 }

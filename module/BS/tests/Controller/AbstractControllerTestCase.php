@@ -80,8 +80,7 @@ abstract class AbstractControllerTestCase extends AbstractTestCase
         }
 
         $controllerMiddleware = $this->serviceLocator->get(ControllerMiddleware::class);
-        $this->response       =
-            $controllerMiddleware->process($request, $this->serviceLocator->get(NotFoundDelegate::class));
+        $this->response = $controllerMiddleware->process($request, $this->getResponseDelegate());
     }
 
     public function assertResponseStatusCode($code)

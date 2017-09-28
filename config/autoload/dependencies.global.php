@@ -53,6 +53,7 @@ return [
 
             \BS\Middleware\AuthenticationMiddleware::class => \BS\Factory\InvokableFactory::class,
             \BS\Middleware\ControllerMiddleware::class => \BS\Factory\ControllerMiddlewareFactory::class,
+            \BS\Middleware\ResponseMiddleware::class => \BS\Factory\InvokableFactory::class,
 
             \Zend\Expressive\Template\TemplateRendererInterface::class => \Zend\Expressive\ZendView\ZendViewRendererFactory::class
         ],
